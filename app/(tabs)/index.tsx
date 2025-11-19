@@ -9,6 +9,7 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   Alert,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -100,7 +101,7 @@ export default function LibraryScreen() {
     <ThemedView style={styles.container}>
       <ThemedView style={styles.header}>
         <ThemedText type="title" style={styles.title}>
-          📚 My Library!
+          📚 My Library
         </ThemedText>
         <ThemedText style={styles.subtitle}>
           {stats.total} {stats.total === 1 ? "book" : "books"} • {stats.read}{" "}
@@ -109,16 +110,19 @@ export default function LibraryScreen() {
 
         {/* Active Books Counter */}
         {stats.reading > 0 && (
-          <TouchableOpacity
+          <Pressable
             style={[styles.activeCounter, { backgroundColor: colors.primary }]}
             onPress={() => handleFilterChange("reading")}
-            activeOpacity={0.7}
+            android_ripple={{
+              color: "rgba(255, 255, 255, 0.3)",
+              borderless: false,
+            }}
           >
             <ThemedText style={styles.activeCounterText}>
               📖 {stats.reading} {stats.reading === 1 ? "book" : "books"} in
               progress
             </ThemedText>
-          </TouchableOpacity>
+          </Pressable>
         )}
       </ThemedView>
 
@@ -128,11 +132,11 @@ export default function LibraryScreen() {
           styles.searchContainer,
           {
             backgroundColor: colors.card,
-            shadowColor: colors.text,
-            shadowOpacity: 0.05,
-            shadowRadius: 10,
-            shadowOffset: { width: 0, height: 2 },
-            elevation: 2,
+            shadowColor: "#000",
+            shadowOpacity: 0.1,
+            shadowRadius: 20,
+            shadowOffset: { width: 0, height: 4 },
+            elevation: 8,
           },
         ]}
       >
@@ -185,11 +189,18 @@ export default function LibraryScreen() {
             emoji: "🤝",
           },
         ].map((filter) => (
-          <TouchableOpacity
+          <Pressable
             key={filter.key}
             onPress={() =>
               handleFilterChange(filter.key as typeof selectedFilter)
             }
+            android_ripple={{
+              color:
+                selectedFilter === filter.key
+                  ? "rgba(255, 255, 255, 0.3)"
+                  : colors.primary + "20",
+              borderless: false,
+            }}
             style={[
               styles.filterButton,
               {
@@ -197,10 +208,10 @@ export default function LibraryScreen() {
                   selectedFilter === filter.key ? colors.primary : colors.card,
                 shadowColor:
                   selectedFilter === filter.key ? colors.primary : colors.text,
-                shadowOpacity: selectedFilter === filter.key ? 0.3 : 0.05,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 2 },
-                elevation: selectedFilter === filter.key ? 4 : 1,
+                shadowOpacity: selectedFilter === filter.key ? 0.35 : 0.08,
+                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 3 },
+                elevation: selectedFilter === filter.key ? 6 : 2,
               },
             ]}
           >
@@ -215,7 +226,7 @@ export default function LibraryScreen() {
             >
               {filter.emoji} {filter.label} ({filter.count})
             </ThemedText>
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </ScrollView>
 
@@ -266,64 +277,70 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 60,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingHorizontal: 28,
+    paddingBottom: 32,
   },
   title: {
     fontSize: 36,
-    fontWeight: "800",
+    fontWeight: "900",
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 15,
-    opacity: 0.6,
+    opacity: 0.65,
     marginTop: 6,
     fontWeight: "500",
+    letterSpacing: 0.2,
   },
   activeCounter: {
-    marginTop: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    marginTop: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
+    overflow: "hidden",
   },
   activeCounterText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
     textAlign: "center",
+    letterSpacing: 0.2,
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: 20,
     marginBottom: 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 14,
-    borderRadius: 16,
+    borderRadius: 20,
     gap: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
+    letterSpacing: 0.2,
   },
   filterScroll: {
     maxHeight: 50,
     marginBottom: 20,
   },
   filterButton: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 24,
-    marginRight: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 30,
+    marginRight: 14,
+    overflow: "hidden",
   },
   filterText: {
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   scrollView: {
     flex: 1,
@@ -335,19 +352,24 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 80,
+    paddingVertical: 100,
   },
   emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
+    fontSize: 80,
+    marginBottom: 20,
+    opacity: 0.8,
   },
   emptyText: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 8,
+    fontSize: 24,
+    fontWeight: "800",
+    marginBottom: 10,
+    letterSpacing: -0.5,
   },
   emptySubtext: {
-    fontSize: 15,
-    opacity: 0.5,
+    fontSize: 16,
+    opacity: 0.6,
+    textAlign: "center",
+    paddingHorizontal: 40,
+    letterSpacing: 0.1,
   },
 });

@@ -17,6 +17,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import ConfettiCannon from "react-native-confetti-cannon";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 
@@ -34,6 +36,8 @@ export default function WheelScreen() {
 
   const spinValue = useRef(new Animated.Value(0)).current;
   const scaleValue = useRef(new Animated.Value(1)).current;
+  const fadeValue = useRef(new Animated.Value(0)).current;
+  const confettiRef = useRef<any>(null);
   const { colors } = useTheme();
 
   useEffect(() => {
@@ -79,22 +83,34 @@ export default function WheelScreen() {
     setSpinning(true);
     SoundManager.playSound("wheel");
 
-    // Spinning animation
+    // Enhanced spinning animation with fade
     spinValue.setValue(0);
-    Animated.sequence([
-      Animated.timing(spinValue, {
-        toValue: 8,
-        duration: 2000,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleValue, {
-        toValue: 1.1,
-        friction: 3,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleValue, {
+    fadeValue.setValue(0);
+    
+    Animated.parallel([
+      Animated.sequence([
+        Animated.timing(spinValue, {
+          toValue: 12, // More spins!
+          duration: 2500,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleValue, {
+          toValue: 1.15,
+          friction: 4,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleValue, {
+          toValue: 1,
+          friction: 4,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.timing(fadeValue, {
         toValue: 1,
-        friction: 3,
+        duration: 500,
+        delay: 2000,
         useNativeDriver: true,
       }),
     ]).start();
@@ -130,10 +146,12 @@ export default function WheelScreen() {
           );
         } else {
           SoundManager.playHaptic("success");
+          // Trigger confetti!
+          confettiRef.current?.start();
         }
         setSelectedBooks(selectedBooksResult);
         setSpinning(false);
-      }, 2000);
+      }, 2500);
     } catch (error) {
       console.error("Error spinning wheel:", error);
       Alert.alert("Error", "Failed to spin the wheel");
@@ -171,8 +189,11 @@ export default function WheelScreen() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       if (newStatus === "reading") {
-        // Confetti effect - we'll show a simple alert with celebration
-        Alert.alert("🎉 Great Choice!", "Happy reading! Enjoy your book!");
+        // Trigger confetti for starting to read!
+        confettiRef.current?.start();
+        setTimeout(() => {
+          Alert.alert("🎉 Great Choice!", "Happy reading! Enjoy your book!");
+        }, 300);
       }
 
       // Update the local state
@@ -353,27 +374,37 @@ export default function WheelScreen() {
               },
             ]}
           >
-            <View
+            <LinearGradient
+              colors={[colors.primary + "30", colors.primary + "10", colors.primary + "30"]}
               style={[
                 styles.wheelInner,
                 {
                   borderColor: colors.primary,
-                  backgroundColor: colors.primary + "10",
                   shadowColor: colors.primary,
-                  shadowOpacity: 0.3,
-                  shadowRadius: 20,
+                  shadowOpacity: spinning ? 0.6 : 0.3,
+                  shadowRadius: spinning ? 30 : 20,
                   shadowOffset: { width: 0, height: 8 },
-                  elevation: 8,
+                  elevation: spinning ? 12 : 8,
                   overflow: "hidden",
                 },
               ]}
             >
-              <ThemedText style={styles.wheelEmoji}>
+              <ThemedText style={[styles.wheelEmoji, spinning && styles.wheelEmojiSpinning]}>
                 {spinning ? "🎰" : "📚"}
               </ThemedText>
-            </View>
+            </LinearGradient>
           </Animated.View>
         </View>
+
+        {/* Confetti */}
+        <ConfettiCannon
+          ref={confettiRef}
+          count={100}
+          origin={{ x: width / 2, y: 200 }}
+          autoStart={false}
+          fadeOut={true}
+          fallSpeed={2500}
+        />
 
         {/* Spin Button */}
         <TouchableOpacity
@@ -382,10 +413,10 @@ export default function WheelScreen() {
             {
               backgroundColor: colors.primary,
               shadowColor: colors.primary,
-              shadowOpacity: spinning ? 0.1 : 0.4,
-              shadowRadius: 16,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 6,
+              shadowOpacity: spinning ? 0.1 : 0.5,
+              shadowRadius: 20,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: spinning ? 4 : 8,
             },
             spinning && styles.spinButtonDisabled,
           ]}
@@ -400,22 +431,39 @@ export default function WheelScreen() {
 
         {/* Selected Books */}
         {selectedBooks.length > 0 && !spinning && (
-          <ThemedView style={styles.resultsContainer}>
+          <Animated.View style={[styles.resultsContainer, { opacity: fadeValue }]}>
             <ThemedText style={styles.resultsTitle}>
               ✨ Your Top Picks:
             </ThemedText>
             {selectedBooks.map((book, index) => (
               <TouchableOpacity
                 key={book.id}
-                style={[styles.bookCard, { backgroundColor: colors.card }]}
+                style={[
+                  styles.bookCard,
+                  {
+                    backgroundColor: colors.card,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 12,
+                    elevation: 8,
+                  },
+                ]}
                 onPress={() => handleBookPress(book)}
-                activeOpacity={0.7}
+                activeOpacity={0.85}
+                android_ripple={{
+                  color: colors.primary + "20",
+                  borderless: false,
+                }}
               >
-                <View style={styles.bookNumber}>
+                <LinearGradient
+                  colors={["#FFD700", "#FFA500"]}
+                  style={styles.bookNumber}
+                >
                   <ThemedText style={styles.bookNumberText}>
                     {index + 1}
                   </ThemedText>
-                </View>
+                </LinearGradient>
                 <View style={styles.bookContent}>
                   {book.cover_url && (
                     <Image
@@ -457,7 +505,7 @@ export default function WheelScreen() {
                 </View>
               </TouchableOpacity>
             ))}
-          </ThemedView>
+          </Animated.View>
         )}
 
         <View style={{ height: 100 }} />
@@ -468,7 +516,6 @@ export default function WheelScreen() {
         visible={statusModalVisible}
         animationType="slide"
         presentationStyle="pageSheet"
-        transparent={true}
         onRequestClose={() => setStatusModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
@@ -498,6 +545,10 @@ export default function WheelScreen() {
                 ]}
                 onPress={() => handleStatusChange("reading")}
                 activeOpacity={0.7}
+                android_ripple={{
+                  color: "rgba(255, 255, 255, 0.3)",
+                  borderless: false,
+                }}
               >
                 <ThemedText style={styles.statusOptionEmoji}>📖</ThemedText>
                 <ThemedText
@@ -514,6 +565,10 @@ export default function WheelScreen() {
                 ]}
                 onPress={() => handleStatusChange("unread")}
                 activeOpacity={0.7}
+                android_ripple={{
+                  color: colors.primary + "20",
+                  borderless: false,
+                }}
               >
                 <ThemedText style={styles.statusOptionEmoji}>📚</ThemedText>
                 <ThemedText style={styles.statusOptionText}>
@@ -528,6 +583,10 @@ export default function WheelScreen() {
                 ]}
                 onPress={() => handleStatusChange("read")}
                 activeOpacity={0.7}
+                android_ripple={{
+                  color: colors.primary + "20",
+                  borderless: false,
+                }}
               >
                 <ThemedText style={styles.statusOptionEmoji}>✅</ThemedText>
                 <ThemedText style={styles.statusOptionText}>
@@ -562,17 +621,21 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingHorizontal: 28,
+    paddingBottom: 32,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
+    fontSize: 36,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+    textAlign: "center",
   },
   subtitle: {
-    fontSize: 16,
-    opacity: 0.6,
-    marginTop: 4,
+    fontSize: 15,
+    opacity: 0.65,
+    marginTop: 6,
+    textAlign: "center",
+    letterSpacing: 0.2,
   },
   filterInfo: {
     marginHorizontal: 20,
@@ -676,20 +739,25 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 60,
   },
+  wheelEmojiSpinning: {
+    fontSize: 64,
+  },
   spinButton: {
     marginHorizontal: 40,
-    padding: 20,
-    borderRadius: 16,
+    padding: 22,
+    borderRadius: 18,
     alignItems: "center",
     marginBottom: 32,
   },
   spinButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
+    transform: [{ scale: 0.98 }],
   },
   spinButtonText: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: "bold",
+    letterSpacing: 0.5,
   },
   resultsContainer: {
     marginHorizontal: 20,
@@ -739,34 +807,44 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   bookTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 4,
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 6,
+    letterSpacing: 0.3,
   },
   bookAuthor: {
-    fontSize: 14,
-    opacity: 0.7,
-    marginBottom: 8,
+    fontSize: 15,
+    opacity: 0.8,
+    marginBottom: 10,
+    letterSpacing: 0.2,
   },
   bookGenres: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 4,
+    gap: 6,
   },
   bookGenreTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   bookGenreText: {
-    fontSize: 10,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
   },
   tapHint: {
-    fontSize: 12,
-    opacity: 0.5,
-    marginTop: 8,
+    fontSize: 13,
+    opacity: 0.6,
+    marginTop: 10,
     fontStyle: "italic",
+    letterSpacing: 0.2,
   },
   modalOverlay: {
     flex: 1,
@@ -774,76 +852,81 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   statusModal: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 28,
+    paddingBottom: 44,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 16,
   },
   modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: "#ccc",
-    borderRadius: 2,
+    width: 48,
+    height: 5,
+    backgroundColor: "#d0d0d0",
+    borderRadius: 3,
     alignSelf: "center",
-    marginBottom: 20,
+    marginBottom: 24,
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 16,
+    fontSize: 28,
+    fontWeight: "800",
+    marginBottom: 20,
     textAlign: "center",
+    letterSpacing: 0.3,
   },
   selectedBookInfo: {
-    marginBottom: 24,
-    paddingBottom: 20,
+    marginBottom: 28,
+    paddingBottom: 24,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: "#e5e5e5",
   },
   selectedBookTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 4,
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 6,
     textAlign: "center",
+    letterSpacing: 0.2,
   },
   selectedBookAuthor: {
-    fontSize: 14,
-    opacity: 0.6,
+    fontSize: 15,
+    opacity: 0.65,
     textAlign: "center",
+    letterSpacing: 0.1,
   },
   statusOptions: {
-    gap: 12,
-    marginBottom: 16,
+    gap: 14,
+    marginBottom: 20,
   },
   statusOption: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 18,
-    borderRadius: 16,
-    gap: 12,
+    padding: 20,
+    borderRadius: 18,
+    gap: 14,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     elevation: 3,
   },
   statusOptionEmoji: {
-    fontSize: 24,
+    fontSize: 28,
   },
   statusOptionText: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   cancelButton: {
-    padding: 16,
+    padding: 18,
     alignItems: "center",
   },
   cancelButtonText: {
-    fontSize: 16,
-    opacity: 0.6,
+    fontSize: 17,
+    opacity: 0.5,
+    letterSpacing: 0.1,
   },
 });

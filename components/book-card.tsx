@@ -2,16 +2,19 @@ import { SoundManager } from "@/lib/sounds";
 import { Book, supabase } from "@/lib/supabase";
 import { useTheme } from "@react-navigation/native";
 import { Image } from "expo-image";
-import { useEffect, useState } from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import ConfettiCannon from "react-native-confetti-cannon";
 import { ThemedText } from "./themed-text";
 import { ThemedView } from "./themed-view";
 import { IconSymbol } from "./ui/icon-symbol";
@@ -29,6 +32,7 @@ export function BookCard({ book, onUpdate }: BookCardProps) {
   const [rating, setRating] = useState(book.rating || 0);
   const [review, setReview] = useState(book.review || "");
   const [borrowedTo, setBorrowedTo] = useState(book.borrowed_to || "");
+  const confettiRef = useRef<any>(null);
 
   // Editable book details
   const [title, setTitle] = useState(book.title || "");
@@ -62,6 +66,9 @@ export function BookCard({ book, onUpdate }: BookCardProps) {
 
   const handleUpdateBook = async () => {
     try {
+      const wasNotRead = book.status !== "read";
+      const isNowRead = status === "read";
+
       const updates: any = {
         status,
         rating: rating || null,
@@ -83,6 +90,11 @@ export function BookCard({ book, onUpdate }: BookCardProps) {
         .eq("id", book.id);
 
       if (error) throw error;
+
+      // Trigger confetti when book is marked as read for the first time
+      if (wasNotRead && isNowRead) {
+        confettiRef.current?.start();
+      }
 
       SoundManager.playHaptic("success");
       setEditing(false);
@@ -167,21 +179,24 @@ export function BookCard({ book, onUpdate }: BookCardProps) {
 
   return (
     <>
-      <TouchableOpacity
+      <Pressable
         onPress={() => {
           SoundManager.playHaptic("light");
           setModalVisible(true);
         }}
-        activeOpacity={0.7}
+        android_ripple={{
+          color: colors.primary + "20",
+          borderless: false,
+        }}
         style={[
           styles.card,
           {
             backgroundColor: colors.card,
-            shadowColor: colors.text,
-            shadowOpacity: 0.08,
-            shadowRadius: 12,
-            shadowOffset: { width: 0, height: 4 },
-            elevation: 3,
+            shadowColor: "#000",
+            shadowOpacity: 0.15,
+            shadowRadius: 20,
+            shadowOffset: { width: 0, height: 8 },
+            elevation: 10,
           },
         ]}
       >
@@ -251,7 +266,7 @@ export function BookCard({ book, onUpdate }: BookCardProps) {
             </View>
           </View>
         </View>
-      </TouchableOpacity>
+      </Pressable>
 
       <Modal
         visible={modalVisible}
@@ -260,6 +275,14 @@ export function BookCard({ book, onUpdate }: BookCardProps) {
         onRequestClose={() => setModalVisible(false)}
       >
         <ThemedView style={styles.modalContainer}>
+          <ConfettiCannon
+            ref={confettiRef}
+            count={150}
+            origin={{ x: 180, y: 300 }}
+            autoStart={false}
+            fadeOut={true}
+            fallSpeed={2500}
+          />
           <View
             style={[styles.modalHeader, { borderBottomColor: colors.border }]}
           >
@@ -611,30 +634,40 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   title: {
-    fontSize: 17,
-    fontWeight: "700",
-    lineHeight: 22,
-    marginBottom: 4,
+    fontSize: 20,
+    fontWeight: "800",
+    lineHeight: 26,
+    marginBottom: 6,
+    letterSpacing: -0.3,
   },
   author: {
-    fontSize: 15,
+    fontSize: 16,
     opacity: 0.7,
-    marginBottom: 8,
+    marginBottom: 12,
+    letterSpacing: 0.1,
+    fontWeight: "500",
   },
   genreRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
-    marginBottom: 8,
+    gap: 7,
+    marginBottom: 10,
   },
   genrePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   genreText: {
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "800",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   statusRow: {
     flexDirection: "row",
@@ -642,16 +675,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   statusText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   rating: {
-    fontSize: 14,
+    fontSize: 15,
   },
   modalContainer: {
     flex: 1,

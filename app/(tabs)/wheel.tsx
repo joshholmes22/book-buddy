@@ -6,6 +6,7 @@ import { Book, Genre, supabase } from "@/lib/supabase";
 import { useTheme } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -18,7 +19,6 @@ import {
   View,
 } from "react-native";
 import ConfettiCannon from "react-native-confetti-cannon";
-import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 
@@ -86,7 +86,7 @@ export default function WheelScreen() {
     // Enhanced spinning animation with fade
     spinValue.setValue(0);
     fadeValue.setValue(0);
-    
+
     Animated.parallel([
       Animated.sequence([
         Animated.timing(spinValue, {
@@ -375,7 +375,11 @@ export default function WheelScreen() {
             ]}
           >
             <LinearGradient
-              colors={[colors.primary + "30", colors.primary + "10", colors.primary + "30"]}
+              colors={[
+                colors.primary + "30",
+                colors.primary + "10",
+                colors.primary + "30",
+              ]}
               style={[
                 styles.wheelInner,
                 {
@@ -389,7 +393,12 @@ export default function WheelScreen() {
                 },
               ]}
             >
-              <ThemedText style={[styles.wheelEmoji, spinning && styles.wheelEmojiSpinning]}>
+              <ThemedText
+                style={[
+                  styles.wheelEmoji,
+                  spinning && styles.wheelEmojiSpinning,
+                ]}
+              >
                 {spinning ? "🎰" : "📚"}
               </ThemedText>
             </LinearGradient>
@@ -431,7 +440,9 @@ export default function WheelScreen() {
 
         {/* Selected Books */}
         {selectedBooks.length > 0 && !spinning && (
-          <Animated.View style={[styles.resultsContainer, { opacity: fadeValue }]}>
+          <Animated.View
+            style={[styles.resultsContainer, { opacity: fadeValue }]}
+          >
             <ThemedText style={styles.resultsTitle}>
               ✨ Your Top Picks:
             </ThemedText>

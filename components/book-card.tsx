@@ -2,7 +2,6 @@ import { SoundManager } from "@/lib/sounds";
 import { Book, supabase } from "@/lib/supabase";
 import { useTheme } from "@react-navigation/native";
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,

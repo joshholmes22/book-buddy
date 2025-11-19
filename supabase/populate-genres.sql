@@ -1,0 +1,35 @@
+-- Populate the genres table with common book genres
+-- Run this in your Supabase SQL editor
+
+INSERT INTO genres (name) VALUES
+  ('Fiction'),
+  ('Non-Fiction'),
+  ('Mystery'),
+  ('Thriller'),
+  ('Romance'),
+  ('Science Fiction'),
+  ('Fantasy'),
+  ('Horror'),
+  ('Historical Fiction'),
+  ('Biography'),
+  ('Autobiography'),
+  ('Memoir'),
+  ('Self-Help'),
+  ('Business'),
+  ('Psychology'),
+  ('Philosophy'),
+  ('History'),
+  ('True Crime'),
+  ('Poetry'),
+  ('Drama'),
+  ('Adventure'),
+  ('Comedy'),
+  ('Young Adult'),
+  ('Children'),
+  ('Graphic Novel'),
+  ('Cookbook'),
+  ('Travel'),
+  ('Art'),
+  ('Music'),
+  ('Sports')
+ON CONFLICT (name) DO NOTHING;

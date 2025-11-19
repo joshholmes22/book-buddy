@@ -4,12 +4,14 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SoundManager } from "@/lib/sounds";
 import { Book, Genre, supabase } from "@/lib/supabase";
 import { useTheme } from "@react-navigation/native";
+import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
   Dimensions,
+  Modal,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -26,6 +28,9 @@ export default function WheelScreen() {
   const [includeMode, setIncludeMode] = useState(true); // true = include, false = exclude
   const [spinning, setSpinning] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
+  const [selectedBookForStatus, setSelectedBookForStatus] =
+    useState<Book | null>(null);
 
   const spinValue = useRef(new Animated.Value(0)).current;
   const scaleValue = useRef(new Animated.Value(1)).current;
@@ -98,8 +103,12 @@ export default function WheelScreen() {
       let selectedBooksResult: Book[] = [];
 
       if (selectedGenres.length > 0) {
-        // Use the Supabase function for genre filtering
-        const { data, error } = await supabase.rpc("get_books_by_genre", {
+        // Use the appropriate Supabase function based on include/exclude mode
+        const functionName = includeMode
+          ? "get_books_by_genre"
+          : "get_books_excluding_genre";
+
+        const { data, error } = await supabase.rpc(functionName, {
           selected_genres: selectedGenres,
         });
 
@@ -114,9 +123,10 @@ export default function WheelScreen() {
       // Wait for animation
       setTimeout(() => {
         if (selectedBooksResult.length === 0) {
+          const modeText = includeMode ? "with" : "without";
           Alert.alert(
             "No Matches",
-            "No books found with the selected genres. Try different filters!"
+            `No books found ${modeText} the selected genres. Try different filters!`
           );
         } else {
           SoundManager.playHaptic("success");
@@ -138,6 +148,49 @@ export default function WheelScreen() {
         ? prev.filter((g) => g !== genreName)
         : [...prev, genreName]
     );
+  };
+
+  const handleBookPress = (book: Book) => {
+    SoundManager.playHaptic("light");
+    setSelectedBookForStatus(book);
+    setStatusModalVisible(true);
+  };
+
+  const handleStatusChange = async (newStatus: Book["status"]) => {
+    if (!selectedBookForStatus) return;
+
+    try {
+      const { error } = await supabase
+        .from("books")
+        .update({ status: newStatus })
+        .eq("id", selectedBookForStatus.id);
+
+      if (error) throw error;
+
+      // Play success haptic and show confetti for "reading" status
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      if (newStatus === "reading") {
+        // Confetti effect - we'll show a simple alert with celebration
+        Alert.alert("🎉 Great Choice!", "Happy reading! Enjoy your book!");
+      }
+
+      // Update the local state
+      setSelectedBooks((prev) =>
+        prev.map((b) =>
+          b.id === selectedBookForStatus.id ? { ...b, status: newStatus } : b
+        )
+      );
+
+      // Refresh unread books list
+      fetchUnreadBooks();
+
+      setStatusModalVisible(false);
+      setSelectedBookForStatus(null);
+    } catch (error) {
+      console.error("Error updating book status:", error);
+      Alert.alert("Error", "Failed to update book status");
+    }
   };
 
   const spin = spinValue.interpolate({
@@ -222,6 +275,9 @@ export default function WheelScreen() {
                 ]}
                 onPress={() => {
                   SoundManager.playHaptic("light");
+                  if (!includeMode) {
+                    setSelectedGenres([]); // Clear selections when switching modes
+                  }
                   setIncludeMode(true);
                 }}
               >
@@ -236,6 +292,9 @@ export default function WheelScreen() {
                 ]}
                 onPress={() => {
                   SoundManager.playHaptic("light");
+                  if (includeMode) {
+                    setSelectedGenres([]); // Clear selections when switching modes
+                  }
                   setIncludeMode(false);
                 }}
               >
@@ -346,9 +405,11 @@ export default function WheelScreen() {
               ✨ Your Top Picks:
             </ThemedText>
             {selectedBooks.map((book, index) => (
-              <View
+              <TouchableOpacity
                 key={book.id}
                 style={[styles.bookCard, { backgroundColor: colors.card }]}
+                onPress={() => handleBookPress(book)}
+                activeOpacity={0.7}
               >
                 <View style={styles.bookNumber}>
                   <ThemedText style={styles.bookNumberText}>
@@ -389,15 +450,105 @@ export default function WheelScreen() {
                         ))}
                       </View>
                     )}
+                    <ThemedText style={styles.tapHint}>
+                      Tap to change status
+                    </ThemedText>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </ThemedView>
         )}
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Status Change Modal */}
+      <Modal
+        visible={statusModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        transparent={true}
+        onRequestClose={() => setStatusModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <ThemedView
+            style={[styles.statusModal, { backgroundColor: colors.card }]}
+          >
+            <View style={styles.modalHandle} />
+
+            <ThemedText style={styles.modalTitle}>Change Status</ThemedText>
+
+            {selectedBookForStatus && (
+              <View style={styles.selectedBookInfo}>
+                <ThemedText style={styles.selectedBookTitle} numberOfLines={2}>
+                  {selectedBookForStatus.title}
+                </ThemedText>
+                <ThemedText style={styles.selectedBookAuthor} numberOfLines={1}>
+                  {selectedBookForStatus.author}
+                </ThemedText>
+              </View>
+            )}
+
+            <View style={styles.statusOptions}>
+              <TouchableOpacity
+                style={[
+                  styles.statusOption,
+                  { backgroundColor: colors.primary },
+                ]}
+                onPress={() => handleStatusChange("reading")}
+                activeOpacity={0.7}
+              >
+                <ThemedText style={styles.statusOptionEmoji}>📖</ThemedText>
+                <ThemedText
+                  style={[styles.statusOptionText, { color: "#fff" }]}
+                >
+                  I'll read this one!
+                </ThemedText>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.statusOption,
+                  { backgroundColor: colors.background },
+                ]}
+                onPress={() => handleStatusChange("unread")}
+                activeOpacity={0.7}
+              >
+                <ThemedText style={styles.statusOptionEmoji}>📚</ThemedText>
+                <ThemedText style={styles.statusOptionText}>
+                  Keep it TBR
+                </ThemedText>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.statusOption,
+                  { backgroundColor: colors.background },
+                ]}
+                onPress={() => handleStatusChange("read")}
+                activeOpacity={0.7}
+              >
+                <ThemedText style={styles.statusOptionEmoji}>✅</ThemedText>
+                <ThemedText style={styles.statusOptionText}>
+                  Already Read
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setStatusModalVisible(false)}
+            >
+              <ThemedText
+                style={[styles.cancelButtonText, { color: colors.text }]}
+              >
+                Cancel
+              </ThemedText>
+            </TouchableOpacity>
+          </ThemedView>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -610,5 +761,89 @@ const styles = StyleSheet.create({
   bookGenreText: {
     fontSize: 10,
     fontWeight: "600",
+  },
+  tapHint: {
+    fontSize: 12,
+    opacity: 0.5,
+    marginTop: 8,
+    fontStyle: "italic",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  statusModal: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#ccc",
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  selectedBookInfo: {
+    marginBottom: 24,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  selectedBookTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  selectedBookAuthor: {
+    fontSize: 14,
+    opacity: 0.6,
+    textAlign: "center",
+  },
+  statusOptions: {
+    gap: 12,
+    marginBottom: 16,
+  },
+  statusOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 18,
+    borderRadius: 16,
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  statusOptionEmoji: {
+    fontSize: 24,
+  },
+  statusOptionText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  cancelButton: {
+    padding: 16,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    opacity: 0.6,
   },
 });

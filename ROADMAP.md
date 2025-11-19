@@ -1,12 +1,51 @@
 # 📚 Book Buddy Feature Roadmap
 
-## Current Version: 1.0.0 (MVP Complete)
+## Current Version: 1.1.0 (Priority Features Complete! 🎉)
 
 This roadmap outlines upcoming features and improvements for Book Buddy, balancing essential usability enhancements with fun, engaging features that will make managing your book collection even more delightful!
 
 ---
 
-## 🎯 Priority Features (v1.1.0)
+## 🎉 Recently Completed (v1.1.0)
+
+### ✅ Interactive Wheel Selections - COMPLETE!
+
+**Status:** ✅ Released in v1.1.0  
+**Priority:** High
+
+Wheel results are now fully interactive! Tap any book card to instantly change its status with a beautiful modal picker. Includes celebration haptics and a special alert when you start reading a book! 🎉
+
+### ✅ Active Books Counter - COMPLETE!
+
+**Status:** ✅ Released in v1.1.0  
+**Priority:** High
+
+The library now displays a prominent counter showing how many books you're currently reading. Tap it to instantly filter to your in-progress books! 📖
+
+### ✅ Edit Book Details - COMPLETE!
+
+**Status:** ✅ Released in v1.1.0  
+**Priority:** High
+
+You can now edit any book's details including title, author, cover URL, ISBN, and genres. Perfect for fixing data issues or customizing special editions! ✏️
+
+### ✅ Manual Book Entry (No ISBN Required) - COMPLETE!
+
+**Status:** ✅ Released in v1.1.0  
+**Priority:** High
+
+Add any book manually without an ISBN! Just enter the title and author (required), and optionally add cover URL, ISBN, and genres. Perfect for older books and self-published works! 📚
+
+### ✅ Fix Genre Filter Bug - COMPLETE!
+
+**Status:** ✅ Fixed in v1.1.0  
+**Priority:** High
+
+Genre filtering now works perfectly! Include/exclude modes are separated, selections clear when switching, and the exclude mode properly filters books. 🐛
+
+---
+
+## 🎯 Priority Features (v1.2.0 - Next Up!)
 
 ### ✅ Interactive Wheel Selections
 
@@ -440,15 +479,17 @@ This roadmap outlines upcoming features and improvements for Book Buddy, balanci
 
 ## 🗓️ Release Timeline
 
-### v1.1.0 - Essential Fixes & Enhancements (Target: 1-2 months)
+### ✅ v1.1.0 - Essential Fixes & Enhancements (COMPLETE! 🎉)
 
-- 🐛 Fix genre filter include/exclude bug
+**Released:** November 19, 2025
+
+- ✅ Fix genre filter include/exclude bug
 - ✅ Interactive wheel selections
-- 📊 Active books counter
-- ✏️ Edit book details
-- 📚 Manual book entry (no ISBN required)
+- ✅ Active books counter
+- ✅ Edit book details
+- ✅ Manual book entry (no ISBN required)
 
-### v1.2.0 - Multi-User Support (Target: 2-3 months)
+### v1.2.0 - Multi-User Support (Target: 1-2 months)
 
 - 👥 User authentication (Supabase Auth)
 - 👤 User profiles
@@ -456,7 +497,7 @@ This roadmap outlines upcoming features and improvements for Book Buddy, balanci
 - 🔄 Data migration for existing books
 - 👨‍👩‍👧‍👦 Family sharing basics
 
-### v1.3.0 - Fun & Engagement (Target: 4-5 months)
+### v1.3.0 - Fun & Engagement (Target: 3-4 months)
 
 - 🏆 Reading challenges
 - 📈 Statistics dashboard
@@ -464,7 +505,7 @@ This roadmap outlines upcoming features and improvements for Book Buddy, balanci
 - 🎨 Custom collections
 - 👨‍👩‍👧‍👦 Advanced family features
 
-### v1.4.0 - Social & Advanced (Target: 6-7 months)
+### v1.4.0 - Social & Advanced (Target: 5-6 months)
 
 - 🌐 Goodreads integration
 - 📝 Reading notes

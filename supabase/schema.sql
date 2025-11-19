@@ -28,11 +28,20 @@ CREATE TABLE IF NOT EXISTS genres (
   name TEXT UNIQUE NOT NULL
 );
 
--- Function to get random books by genre
+-- Function to get random books by genre (include mode)
 CREATE OR REPLACE FUNCTION get_books_by_genre(selected_genres TEXT[])
 RETURNS SETOF books AS $$
   SELECT * FROM books
   WHERE (genre && selected_genres) AND status = 'unread'
+  ORDER BY RANDOM()
+  LIMIT 3;
+$$ LANGUAGE SQL STABLE;
+
+-- Function to get random books excluding genres (exclude mode)
+CREATE OR REPLACE FUNCTION get_books_excluding_genre(selected_genres TEXT[])
+RETURNS SETOF books AS $$
+  SELECT * FROM books
+  WHERE NOT (genre && selected_genres) AND status = 'unread'
   ORDER BY RANDOM()
   LIMIT 3;
 $$ LANGUAGE SQL STABLE;

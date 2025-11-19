@@ -3,14 +3,15 @@ import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { fetchBookData } from "@/lib/book-api";
 import { SoundManager } from "@/lib/sounds";
-import { supabase } from "@/lib/supabase";
+import { Genre, supabase } from "@/lib/supabase";
 import { useTheme } from "@react-navigation/native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
+  Modal,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -24,8 +25,38 @@ export default function ScanScreen() {
   const [scanning, setScanning] = useState(false);
   const [bookData, setBookData] = useState<any>(null);
   const [manualIsbn, setManualIsbn] = useState("");
+  const [showManualEntry, setShowManualEntry] = useState(false);
+
+  // Manual entry form fields
+  const [manualTitle, setManualTitle] = useState("");
+  const [manualAuthor, setManualAuthor] = useState("");
+  const [manualCoverUrl, setManualCoverUrl] = useState("");
+  const [manualIsbnField, setManualIsbnField] = useState("");
+  const [manualSelectedGenres, setManualSelectedGenres] = useState<string[]>(
+    []
+  );
+  const [availableGenres, setAvailableGenres] = useState<Genre[]>([]);
+
   const { colors } = useTheme();
   const router = useRouter();
+
+  useEffect(() => {
+    fetchGenres();
+  }, []);
+
+  const fetchGenres = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("genres")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      setAvailableGenres(data || []);
+    } catch (error) {
+      console.error("Error fetching genres:", error);
+    }
+  };
 
   if (!permission) {
     return (
@@ -166,6 +197,59 @@ export default function ScanScreen() {
     setManualIsbn("");
   };
 
+  const toggleManualGenre = (genreName: string) => {
+    SoundManager.playHaptic("light");
+    setManualSelectedGenres((prev) =>
+      prev.includes(genreName)
+        ? prev.filter((g) => g !== genreName)
+        : [...prev, genreName]
+    );
+  };
+
+  const handleSaveManualBook = async () => {
+    if (!manualTitle.trim() || !manualAuthor.trim()) {
+      Alert.alert("Error", "Title and Author are required");
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from("books").insert({
+        isbn: manualIsbnField.trim() || null,
+        title: manualTitle.trim(),
+        author: manualAuthor.trim(),
+        cover_url: manualCoverUrl.trim() || null,
+        genre: manualSelectedGenres,
+        status: "unread",
+      });
+
+      if (error) throw error;
+
+      SoundManager.playHaptic("success");
+      Alert.alert("Success!", "Book added to your library", [
+        {
+          text: "View Library",
+          onPress: () => {
+            resetManualEntry();
+            router.push("/(tabs)");
+          },
+        },
+        { text: "Add Another", onPress: () => resetManualEntry() },
+      ]);
+    } catch (error) {
+      console.error("Error saving manual book:", error);
+      Alert.alert("Error", "Failed to save book");
+    }
+  };
+
+  const resetManualEntry = () => {
+    setShowManualEntry(false);
+    setManualTitle("");
+    setManualAuthor("");
+    setManualCoverUrl("");
+    setManualIsbnField("");
+    setManualSelectedGenres([]);
+  };
+
   if (bookData) {
     return (
       <ThemedView style={styles.container}>
@@ -302,7 +386,161 @@ export default function ScanScreen() {
             <IconSymbol name="magnifyingglass" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
+
+        {/* Add Book Manually Button */}
+        <TouchableOpacity
+          style={[styles.addManuallyButton, { backgroundColor: colors.card }]}
+          onPress={() => {
+            SoundManager.playHaptic("light");
+            setShowManualEntry(true);
+          }}
+        >
+          <IconSymbol
+            name="pencil.circle.fill"
+            size={24}
+            color={colors.primary}
+          />
+          <ThemedText style={styles.addManuallyText}>
+            📝 Add Book Manually (No ISBN Required)
+          </ThemedText>
+        </TouchableOpacity>
       </ThemedView>
+
+      {/* Manual Entry Modal */}
+      <Modal
+        visible={showManualEntry}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={resetManualEntry}
+      >
+        <ThemedView style={styles.modalContainer}>
+          <View
+            style={[styles.modalHeader, { borderBottomColor: colors.border }]}
+          >
+            <TouchableOpacity onPress={resetManualEntry}>
+              <IconSymbol name="xmark" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <ThemedText style={styles.modalTitle}>Add Book Manually</ThemedText>
+            <View style={{ width: 24 }} />
+          </View>
+
+          <ScrollView
+            style={styles.modalContent}
+            contentContainerStyle={styles.modalScrollContent}
+          >
+            <ThemedText style={styles.formLabel}>Title *</ThemedText>
+            <TextInput
+              style={[
+                styles.formInput,
+                {
+                  backgroundColor: colors.card,
+                  color: colors.text,
+                  borderColor: colors.border,
+                },
+              ]}
+              value={manualTitle}
+              onChangeText={setManualTitle}
+              placeholder="Enter book title"
+              placeholderTextColor={colors.text + "80"}
+            />
+
+            <ThemedText style={styles.formLabel}>Author *</ThemedText>
+            <TextInput
+              style={[
+                styles.formInput,
+                {
+                  backgroundColor: colors.card,
+                  color: colors.text,
+                  borderColor: colors.border,
+                },
+              ]}
+              value={manualAuthor}
+              onChangeText={setManualAuthor}
+              placeholder="Enter author name"
+              placeholderTextColor={colors.text + "80"}
+            />
+
+            <ThemedText style={styles.formLabel}>
+              Cover Image URL (optional)
+            </ThemedText>
+            <TextInput
+              style={[
+                styles.formInput,
+                {
+                  backgroundColor: colors.card,
+                  color: colors.text,
+                  borderColor: colors.border,
+                },
+              ]}
+              value={manualCoverUrl}
+              onChangeText={setManualCoverUrl}
+              placeholder="https://..."
+              placeholderTextColor={colors.text + "80"}
+            />
+
+            <ThemedText style={styles.formLabel}>ISBN (optional)</ThemedText>
+            <TextInput
+              style={[
+                styles.formInput,
+                {
+                  backgroundColor: colors.card,
+                  color: colors.text,
+                  borderColor: colors.border,
+                },
+              ]}
+              value={manualIsbnField}
+              onChangeText={setManualIsbnField}
+              placeholder="Enter ISBN"
+              placeholderTextColor={colors.text + "80"}
+              keyboardType="numeric"
+            />
+
+            <ThemedText style={styles.formLabel}>Genres (optional)</ThemedText>
+            <View style={styles.genresGrid}>
+              {availableGenres.map((genre) => (
+                <TouchableOpacity
+                  key={genre.id}
+                  style={[
+                    styles.genreChip,
+                    { backgroundColor: colors.background },
+                    manualSelectedGenres.includes(genre.name) && {
+                      backgroundColor: colors.primary,
+                    },
+                  ]}
+                  onPress={() => toggleManualGenre(genre.name)}
+                >
+                  <ThemedText
+                    style={[
+                      styles.genreChipText,
+                      manualSelectedGenres.includes(genre.name) && {
+                        color: "#fff",
+                      },
+                    ]}
+                  >
+                    {genre.name}
+                  </ThemedText>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveButton, { backgroundColor: colors.primary }]}
+              onPress={handleSaveManualBook}
+            >
+              <ThemedText style={styles.saveButtonText}>
+                ✨ Add to Library
+              </ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.cancelButton, { borderColor: colors.border }]}
+              onPress={resetManualEntry}
+            >
+              <ThemedText>Cancel</ThemedText>
+            </TouchableOpacity>
+          </ScrollView>
+        </ThemedView>
+      </Modal>
     </ThemedView>
   );
 }
@@ -527,5 +765,83 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
+  },
+  addManuallyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+    borderRadius: 14,
+    marginTop: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  addManuallyText: {
+    fontSize: 14,
+    fontWeight: "600",
+    flex: 1,
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    paddingTop: 60,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    padding: 20,
+    paddingBottom: 100,
+  },
+  formLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  formInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  genresGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 24,
+  },
+  genreChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  genreChipText: {
+    fontSize: 13,
+    fontWeight: "600",
   },
 });

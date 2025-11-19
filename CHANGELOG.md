@@ -5,6 +5,70 @@ All notable changes to Book Buddy will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-11-19
+
+### Added - Priority Features ✨
+
+#### Interactive Wheel Experience
+
+- **Tappable Wheel Results**: Book cards in wheel results are now interactive - tap any book to quickly change its status
+- **Quick Status Picker**: Beautiful modal with quick actions: "I'll read this one!", "Keep it TBR", or "Already Read"
+- **Celebration Haptics**: Success haptic feedback when changing status from the wheel
+- **Reading Celebration**: Special alert when marking a book as "reading" with confetti emoji 🎉
+
+#### Library Enhancements
+
+- **Active Books Counter**: Prominent counter at the top of the library showing how many books are currently being read
+- **Tappable Counter**: Tap the active books counter to instantly filter to "Reading" status
+- **Visual Prominence**: Eye-catching design with primary color and shadow effects
+
+#### Book Management
+
+- **Edit Book Details**: Full editing capability for any book in your library
+  - Edit title, author, cover image URL, ISBN
+  - Add or remove genres with multi-select interface
+  - Visual indicator showing edit mode
+  - Cancel button to discard changes
+  - "Edit Book Details" button in book modal
+- **Manual Book Entry**: Add books without scanning or ISBN lookup
+  - Completely optional ISBN field
+  - Required fields: Title and Author only
+  - Optional cover image URL
+  - Genre multi-select from available genres
+  - Accessible via "Add Book Manually" button on scan screen
+  - Perfect for older books, self-published works, or books without barcodes
+
+### Fixed - Bug Fixes 🐛
+
+#### Genre Filter Improvements
+
+- **Mode Switching**: Selections now properly clear when switching between Include/Exclude modes
+- **Exclude Mode**: Fixed Supabase function to properly handle genre exclusion
+- **New Database Function**: Added `get_books_excluding_genre()` function for exclude mode
+- **Better Feedback**: Improved alert messages showing which mode is active
+- **Visual Clarity**: Color-coded chips (green for include, red for exclude)
+
+### Changed - Improvements 🔧
+
+#### User Experience
+
+- **Wheel Cards**: Added "Tap to change status" hint text on book cards
+- **Modal Layouts**: Improved spacing and visual hierarchy in modals
+- **Form Validation**: Better error messages for required fields
+- **Genre Selection**: Unified genre chip interface across the app
+
+#### Technical
+
+- **Database Schema**: Added `get_books_excluding_genre()` SQL function
+- **State Management**: Improved state handling for edit modes
+- **Type Safety**: Enhanced TypeScript types for manual entry forms
+
+### Dependencies
+
+- Added: expo-haptics notification feedback (already included in base SDK)
+
+---
+
 ## [1.0.0] - 2025-10-10
 
 ### Added - MVP Release 🎉

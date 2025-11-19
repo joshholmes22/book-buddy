@@ -38,7 +38,10 @@ export default function LibraryScreen() {
       filterBooks(data || [], selectedFilter, searchQuery);
     } catch (error) {
       console.error("Error fetching books:", error);
-      Alert.alert("Error", "Failed to load books");
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to fetch books"
+      );
     } finally {
       setLoading(false);
     }
@@ -97,12 +100,26 @@ export default function LibraryScreen() {
     <ThemedView style={styles.container}>
       <ThemedView style={styles.header}>
         <ThemedText type="title" style={styles.title}>
-          📚 My Library
+          📚 My Library!
         </ThemedText>
         <ThemedText style={styles.subtitle}>
           {stats.total} {stats.total === 1 ? "book" : "books"} • {stats.read}{" "}
           read • {stats.unread} to go
         </ThemedText>
+
+        {/* Active Books Counter */}
+        {stats.reading > 0 && (
+          <TouchableOpacity
+            style={[styles.activeCounter, { backgroundColor: colors.primary }]}
+            onPress={() => handleFilterChange("reading")}
+            activeOpacity={0.7}
+          >
+            <ThemedText style={styles.activeCounterText}>
+              📖 {stats.reading} {stats.reading === 1 ? "book" : "books"} in
+              progress
+            </ThemedText>
+          </TouchableOpacity>
+        )}
       </ThemedView>
 
       {/* Search Bar */}
@@ -262,6 +279,23 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     marginTop: 6,
     fontWeight: "500",
+  },
+  activeCounter: {
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  activeCounterText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
   },
   searchContainer: {
     flexDirection: "row",

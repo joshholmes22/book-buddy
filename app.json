@@ -33,8 +33,7 @@
       "package": "com.glowingmanagement.bookbuddy",
       "permissions": [
         "CAMERA",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "INTERNET"
       ]
     },
     "web": {
@@ -43,6 +42,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-av",
+        {
+          "microphonePermission": false
+        }
+      ],
       [
         "expo-camera",
         {
@@ -70,7 +75,9 @@
       "router": {},
       "eas": {
         "projectId": "341a083c-c423-4186-9c72-842de7313ae0"
-      }
+      },
+      "supabaseUrl": "https://igwvvnymonqgeaxnywaq.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndnZueW1vbnFnZWF4bnl3YXEiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc2MDEyNTIzMywiZXhwIjoyMDc1NzAxMjMzfQ.R8tZWz6P_bzAgfzTNVBckopQzmpqVHAztqv0n7Bm8Ys"
     }
   }
 }

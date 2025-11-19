@@ -2,13 +2,13 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Book, supabase } from "@/lib/supabase";
+import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { useTheme } from "@react-navigation/native";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Dimensions,
-  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -57,11 +57,13 @@ export default function StatsScreen() {
   const [genreData, setGenreData] = useState<GenreStats[]>([]);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [newChallengeTarget, setNewChallengeTarget] = useState("");
   const [selectedChallengeType, setSelectedChallengeType] = useState<
     "yearly" | "monthly"
   >("yearly");
+
+  const challengeBottomSheetRef = useRef<BottomSheet>(null);
+  const challengeSnapPoints = useMemo(() => ["60%"], []);
 
   const [stats, setStats] = useState({
     total: 0,
@@ -327,7 +329,7 @@ export default function StatsScreen() {
     );
 
     setChallenges(updatedChallenges);
-    setShowChallengeModal(false);
+    challengeBottomSheetRef.current?.close();
     setNewChallengeTarget("");
   };
 
@@ -426,7 +428,9 @@ export default function StatsScreen() {
             <ThemedText style={styles.sectionTitle}>
               🎯 Reading Challenges
             </ThemedText>
-            <TouchableOpacity onPress={() => setShowChallengeModal(true)}>
+            <TouchableOpacity
+              onPress={() => challengeBottomSheetRef.current?.snapToIndex(0)}
+            >
               <ThemedText
                 style={[styles.editButton, { color: colors.primary }]}
               >
@@ -630,18 +634,22 @@ export default function StatsScreen() {
         )}
       </ScrollView>
 
-      {/* Challenge Modal */}
-      <Modal
-        visible={showChallengeModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowChallengeModal(false)}
+      {/* Challenge Bottom Sheet */}
+      <BottomSheet
+        ref={challengeBottomSheetRef}
+        index={-1}
+        snapPoints={challengeSnapPoints}
+        enablePanDownToClose
+        backgroundStyle={{ backgroundColor: colors.card }}
+        handleIndicatorStyle={{ backgroundColor: colors.border }}
       >
-        <ThemedView style={styles.modalContainer}>
+        <BottomSheetView style={styles.modalContainer}>
           <View
             style={[styles.modalHeader, { borderBottomColor: colors.border }]}
           >
-            <TouchableOpacity onPress={() => setShowChallengeModal(false)}>
+            <TouchableOpacity
+              onPress={() => challengeBottomSheetRef.current?.close()}
+            >
               <IconSymbol name="xmark" size={24} color={colors.text} />
             </TouchableOpacity>
             <ThemedText style={styles.modalTitle}>Set Challenge</ThemedText>
@@ -735,8 +743,8 @@ export default function StatsScreen() {
               </ThemedText>
             </TouchableOpacity>
           </ScrollView>
-        </ThemedView>
-      </Modal>
+        </BottomSheetView>
+      </BottomSheet>
     </ThemedView>
   );
 }

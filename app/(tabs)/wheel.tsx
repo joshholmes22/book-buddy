@@ -3,16 +3,16 @@ import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SoundManager } from "@/lib/sounds";
 import { Book, Genre, supabase } from "@/lib/supabase";
+import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { useTheme } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Animated,
   Dimensions,
-  Modal,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -30,7 +30,6 @@ export default function WheelScreen() {
   const [includeMode, setIncludeMode] = useState(true); // true = include, false = exclude
   const [spinning, setSpinning] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [statusModalVisible, setStatusModalVisible] = useState(false);
   const [selectedBookForStatus, setSelectedBookForStatus] =
     useState<Book | null>(null);
 
@@ -38,7 +37,9 @@ export default function WheelScreen() {
   const scaleValue = useRef(new Animated.Value(1)).current;
   const fadeValue = useRef(new Animated.Value(0)).current;
   const confettiRef = useRef<any>(null);
+  const statusBottomSheetRef = useRef<BottomSheet>(null);
   const { colors } = useTheme();
+  const statusSnapPoints = useMemo(() => ["50%"], []);
 
   useEffect(() => {
     fetchGenres();
@@ -171,7 +172,7 @@ export default function WheelScreen() {
   const handleBookPress = (book: Book) => {
     SoundManager.playHaptic("light");
     setSelectedBookForStatus(book);
-    setStatusModalVisible(true);
+    statusBottomSheetRef.current?.snapToIndex(0);
   };
 
   const handleStatusChange = async (newStatus: Book["status"]) => {
@@ -206,7 +207,7 @@ export default function WheelScreen() {
       // Refresh unread books list
       fetchUnreadBooks();
 
-      setStatusModalVisible(false);
+      statusBottomSheetRef.current?.close();
       setSelectedBookForStatus(null);
     } catch (error) {
       console.error("Error updating book status:", error);
@@ -522,103 +523,94 @@ export default function WheelScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Status Change Modal */}
-      <Modal
-        visible={statusModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setStatusModalVisible(false)}
+      {/* Status Change Bottom Sheet */}
+      <BottomSheet
+        ref={statusBottomSheetRef}
+        index={-1}
+        snapPoints={statusSnapPoints}
+        enablePanDownToClose
+        backgroundStyle={{ backgroundColor: colors.card }}
+        handleIndicatorStyle={{ backgroundColor: colors.border }}
       >
-        <View style={styles.modalOverlay}>
-          <ThemedView
-            style={[styles.statusModal, { backgroundColor: colors.card }]}
-          >
-            <View style={styles.modalHandle} />
+        <BottomSheetView style={styles.statusModalContent}>
+          <ThemedText style={styles.modalTitle}>Change Status</ThemedText>
 
-            <ThemedText style={styles.modalTitle}>Change Status</ThemedText>
-
-            {selectedBookForStatus && (
-              <View style={styles.selectedBookInfo}>
-                <ThemedText style={styles.selectedBookTitle} numberOfLines={2}>
-                  {selectedBookForStatus.title}
-                </ThemedText>
-                <ThemedText style={styles.selectedBookAuthor} numberOfLines={1}>
-                  {selectedBookForStatus.author}
-                </ThemedText>
-              </View>
-            )}
-
-            <View style={styles.statusOptions}>
-              <TouchableOpacity
-                style={[
-                  styles.statusOption,
-                  { backgroundColor: colors.primary },
-                ]}
-                onPress={() => handleStatusChange("reading")}
-                activeOpacity={0.7}
-                android_ripple={{
-                  color: "rgba(255, 255, 255, 0.3)",
-                  borderless: false,
-                }}
-              >
-                <ThemedText style={styles.statusOptionEmoji}>📖</ThemedText>
-                <ThemedText
-                  style={[styles.statusOptionText, { color: "#fff" }]}
-                >
-                  I'll read this one!
-                </ThemedText>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.statusOption,
-                  { backgroundColor: colors.background },
-                ]}
-                onPress={() => handleStatusChange("unread")}
-                activeOpacity={0.7}
-                android_ripple={{
-                  color: colors.primary + "20",
-                  borderless: false,
-                }}
-              >
-                <ThemedText style={styles.statusOptionEmoji}>📚</ThemedText>
-                <ThemedText style={styles.statusOptionText}>
-                  Keep it TBR
-                </ThemedText>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.statusOption,
-                  { backgroundColor: colors.background },
-                ]}
-                onPress={() => handleStatusChange("read")}
-                activeOpacity={0.7}
-                android_ripple={{
-                  color: colors.primary + "20",
-                  borderless: false,
-                }}
-              >
-                <ThemedText style={styles.statusOptionEmoji}>✅</ThemedText>
-                <ThemedText style={styles.statusOptionText}>
-                  Already Read
-                </ThemedText>
-              </TouchableOpacity>
+          {selectedBookForStatus && (
+            <View style={styles.selectedBookInfo}>
+              <ThemedText style={styles.selectedBookTitle} numberOfLines={2}>
+                {selectedBookForStatus.title}
+              </ThemedText>
+              <ThemedText style={styles.selectedBookAuthor} numberOfLines={1}>
+                {selectedBookForStatus.author}
+              </ThemedText>
             </View>
+          )}
 
+          <View style={styles.statusOptions}>
             <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setStatusModalVisible(false)}
+              style={[styles.statusOption, { backgroundColor: colors.primary }]}
+              onPress={() => handleStatusChange("reading")}
+              activeOpacity={0.7}
+              android_ripple={{
+                color: "rgba(255, 255, 255, 0.3)",
+                borderless: false,
+              }}
             >
-              <ThemedText
-                style={[styles.cancelButtonText, { color: colors.text }]}
-              >
-                Cancel
+              <ThemedText style={styles.statusOptionEmoji}>📖</ThemedText>
+              <ThemedText style={[styles.statusOptionText, { color: "#fff" }]}>
+                I'll read this one!
               </ThemedText>
             </TouchableOpacity>
-          </ThemedView>
-        </View>
-      </Modal>
+
+            <TouchableOpacity
+              style={[
+                styles.statusOption,
+                { backgroundColor: colors.background },
+              ]}
+              onPress={() => handleStatusChange("unread")}
+              activeOpacity={0.7}
+              android_ripple={{
+                color: colors.primary + "20",
+                borderless: false,
+              }}
+            >
+              <ThemedText style={styles.statusOptionEmoji}>📚</ThemedText>
+              <ThemedText style={styles.statusOptionText}>
+                Keep it TBR
+              </ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.statusOption,
+                { backgroundColor: colors.background },
+              ]}
+              onPress={() => handleStatusChange("read")}
+              activeOpacity={0.7}
+              android_ripple={{
+                color: colors.primary + "20",
+                borderless: false,
+              }}
+            >
+              <ThemedText style={styles.statusOptionEmoji}>✅</ThemedText>
+              <ThemedText style={styles.statusOptionText}>
+                Already Read
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={() => statusBottomSheetRef.current?.close()}
+          >
+            <ThemedText
+              style={[styles.cancelButtonText, { color: colors.text }]}
+            >
+              Cancel
+            </ThemedText>
+          </TouchableOpacity>
+        </BottomSheetView>
+      </BottomSheet>
     </ThemedView>
   );
 }
@@ -857,29 +849,9 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     letterSpacing: 0.2,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  statusModal: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+  statusModalContent: {
     padding: 28,
     paddingBottom: 44,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 16,
-  },
-  modalHandle: {
-    width: 48,
-    height: 5,
-    backgroundColor: "#d0d0d0",
-    borderRadius: 3,
-    alignSelf: "center",
-    marginBottom: 24,
   },
   modalTitle: {
     fontSize: 28,

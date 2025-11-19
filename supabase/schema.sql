@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS books (
   borrowed_to TEXT,
   borrowed_at TIMESTAMPTZ,
   returned_at TIMESTAMPTZ,
+  page_count INT,
+  finished_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

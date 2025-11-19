@@ -30,6 +30,8 @@ export type Book = {
   borrowed_to: string | null;
   borrowed_at: string | null;
   returned_at: string | null;
+  page_count: number | null;
+  finished_at: string | null;
   created_at: string;
   updated_at: string;
 };
